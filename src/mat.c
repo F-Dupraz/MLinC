@@ -55,7 +55,16 @@ int copy_mat(mat *output, mat *matrix) {
 
 //---------- Matrix operations ----------//
 mat *transpose(mat *matrix) {
-  //
+  mat *matrixT = new_mat(matrix->cols, matrix->rows);
+  unsigned int i, j;
+
+  for(i = 0; i < matrixT->rows; ++i) {
+    for(j = 0; j < matrixT->cols; ++j) {
+      matrixT->data[i * matrixT->cols + j] = matrix->data[j * matrix->cols + i];
+    }
+  }
+
+  return matrixT;
 }
 
 int eqdims_mat(mat *mat1, mat *mat2) {
@@ -101,7 +110,21 @@ int sub_mat(mat *output, mat *mat1, mat *mat2) {
 }
 
 int mul_mat(mat *output, mat *mat1, mat *mat2) {
-  //
+  if(mat1->cols != mat2->rows) { return 0; }
+  if(output->rows != mat1->rows || output->cols != mat2->cols) { return 0; }
+  
+  fill_mat(output, 0.0f);
+
+  unsigned int i, j, k;
+  for(i = 0; i < mat1->rows; ++i) {
+    for(j = 0; j < mat2->cols; ++j) {
+      for(k = 0; k < mat1->cols; ++k) {
+        output->data[i * output->cols + j] += mat1->data[i * mat1->cols + k] * mat2->data[k * mat2->cols + j];
+      } 
+    }
+  }
+
+  return 1;
 }
 
 int scale_mat(mat *matrix, float scale) {
