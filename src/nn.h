@@ -30,8 +30,7 @@ typedef struct nn_t {
 nn_t *new_nn(size_t in_s, size_t hid_s, size_t out_s);
 nn_t *read_nn(FILE *nn_file);
 void free_nn(nn_t *nn);
-void print_output_nn(nn_t const *nn);
-int randomize_nn(nn_t *nn);
+void randomize_nn(nn_t *nn);
 int forward_nn(nn_t *nn, mat *x);
 int write_nn(nn_t const *nn, FILE *nn_file);
 

@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include <stdio.h>
 
 #include "./mat.h"
@@ -6,14 +5,21 @@
 //---------- Matrix manipulation ----------//
 mat *new_mat(unsigned int r, unsigned int c) {
   mat *m = malloc(sizeof(mat));
+  if(m == NULL) { return NULL; }
+
   m->rows = r;
   m->cols = c;
   m->data = calloc(r * c, sizeof(float));
+  if(m->data == NULL) {
+    free(m);
+    return NULL;
+  }
 
   return m;
 }
 
 void free_mat(mat *matrix) {
+  if(matrix == NULL) { return; }
   free(matrix->data);
   free(matrix);
   
@@ -51,6 +57,23 @@ int copy_mat(mat *output, mat *matrix) {
   }
 
   return 1;
+}
+
+int setat_mat(mat *matrix, size_t r, size_t c, float val) {
+  if(matrix->cols > c && matrix->rows > r) {
+    matrix->data[r * matrix->cols + c] = val;
+    return 1;
+  }
+
+  return 0;
+}
+
+int get_elems(mat *matrix) {
+  return matrix->cols * matrix->rows;
+}
+
+float getat_mat(mat *matrix, size_t r, size_t c) {
+  return matrix->data[r*matrix->cols + c];
 }
 
 //---------- Matrix operations ----------//
