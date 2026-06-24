@@ -2,6 +2,9 @@
 #include "activations.h"
 #include "mat.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+
 nn_t *new_nn(size_t in_s, size_t hid_s, size_t out_s) {
   if(in_s <= 0 || hid_s <= 0 || out_s <= 0) { return NULL; }
   nn_t *nn = malloc(sizeof(nn_t));
@@ -28,8 +31,7 @@ nn_t *new_nn(size_t in_s, size_t hid_s, size_t out_s) {
   return nn;
 }
 
-//
-int forward_nn(nn_t *nn, mat *x) {
+static int forward(nn_t *nn, mat *x) {
   for(size_t i = 0; i < nn->hid_s; ++i) {
     float sum = 0.0f;
     for(size_t j = 0; j < nn->in_s; ++j) {
@@ -46,6 +48,61 @@ int forward_nn(nn_t *nn, mat *x) {
     }
     setat_mat(nn->z2, i, 0, sum + getat_mat(nn->b2, i, 0));
     setat_mat(nn->a2, i, 0, sigmoid(getat_mat(nn->z2, i, 0)));
+  }
+
+  return 1;
+}
+
+static int backward(nn_t *nn, const mat *x, const mat *tg, const float rate) {
+  mat *dz2 = new_mat(nn->out_s, 1);
+  mat *dz1 = new_mat(nn->hid_s, 1);
+
+  for(size_t i = 0; i < nn->out_s; ++i) {
+    float da2 = getat_mat(nn->a2, i, 0) - getat_mat(tg, i, 0);
+    setat_mat(dz2, i, 0, da2 * sigmoid_deriv(getat_mat(nn->a2, i, 0)));
+    float dz2_val = getat_mat(dz2, i, 0);
+    for(size_t k = 0; k < nn->hid_s; ++k) {
+      float w2_actual = getat_mat(nn->w2, i, k);
+      setat_mat(nn->w2, i, k, w2_actual - rate * dz2_val * getat_mat(nn->a1, k, 0));
+    }
+    setat_mat(nn->b2, i, 0, getat_mat(nn->b2, i, 0) - rate * dz2_val);
+  }
+
+  for(size_t i = 0; i < nn->hid_s; ++i) {
+    float da = 0;
+    for(size_t k = 0; k < nn->out_s; ++k) {
+      da += getat_mat(dz2, k, 0) * getat_mat(nn->w2, k, i);
+    }
+    setat_mat(dz1, i, 0, da * sigmoid_deriv(getat_mat(nn->a1, i, 0)));
+    for(size_t l = 0; l < nn->w1->cols; ++l) {
+      float w1_actual = getat_mat(nn->w1, i, l);
+      setat_mat(nn->w1, i, l, w1_actual - rate * getat_mat(dz1, i, 0) * getat_mat(x, l, 0));
+    }
+  }
+
+  free_mat(dz2);
+  free_mat(dz1);
+
+  return 1;
+}
+
+mat *predict_nn(nn_t *nn, mat *x) {
+  if(forward(nn, x)) {
+    return nn->a2;
+  } else {
+    printf("Error during forward prop.\n");
+    return NULL;
+  }
+}
+
+int train_nn(nn_t *nn, const mat *x, const mat *tg, float rate) {
+  if(!forward(nn, x)) {
+    printf("Error during forward prop.\n");
+    return 0;
+  }
+  if(!backward(nn, x, tg, rate)) {
+    printf("Error during back prop.\n");
+    return 0;
   }
 
   return 1;
@@ -111,14 +168,18 @@ void free_nn(nn_t *nn) {
 }
 
 void randomize_nn(nn_t *nn) {
-  for(size_t i = 0; i < nn->w1->rows*nn->w1->cols; ++i) {
-    float rw = ((float)rand() / RAND_MAX) - 0.5;
-    nn->w1->data[i] = rw;
+  for(size_t i = 0; i < nn->w1->rows; ++i) {
+    for(size_t j = 0; j < nn->w1->cols; ++j) {
+      float rw = ((float)rand() / RAND_MAX) - 0.5;
+      setat_mat(nn->w1, i, j, rw);
+    }
   }
 
-  for(size_t i = 0; i < nn->w2->rows*nn->w2->cols; ++i) {
-    float rw = ((float)rand() / RAND_MAX) - 0.5;
-    nn->w2->data[i] = rw;
+  for(size_t i = 0; i < nn->w2->rows; ++i) {
+    for(size_t j = 0; j < nn->w2->cols; ++j) {
+      float rw = ((float)rand() / RAND_MAX) - 0.5;
+      setat_mat(nn->w2, i, j, rw);
+    }
   }
 
   return;
