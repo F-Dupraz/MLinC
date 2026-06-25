@@ -3,12 +3,10 @@
 #include "../src/nn.h"
 #include "../src/mat.h"
 
-#define NUM_EPOCHS 3000
+#define NUM_EPOCHS 2500
 
 int main() {
   nn_t *xor_test = new_nn(2, 4, 1);
-
-  randomize_nn(xor_test);
   
   float X[4][2] = {
       {0.0, 0.0},
@@ -19,7 +17,7 @@ int main() {
 
   float Y[4] = {0.0, 1.0, 1.0, 0.0};
 
-  float lr = 2;
+  float lr = 1.25;
   
   mat *current_x = new_mat(2, 1);
   mat *current_y = new_mat(1, 1);
@@ -37,7 +35,7 @@ int main() {
       total_loss += 0.5f * diff * diff;
     }
 
-    if(epoch % 100 == 0) {
+    if(epoch % 50 == 0) {
       printf("Epoch %d | Loss: %f\n", epoch, total_loss/4.0);
     }
   }
