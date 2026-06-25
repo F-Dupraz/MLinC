@@ -56,28 +56,42 @@ static int forward(nn_t *nn, mat *x) {
 static int backward(nn_t *nn, const mat *x, const mat *tg, const float rate) {
   mat *dz2 = new_mat(nn->out_s, 1);
   mat *dz1 = new_mat(nn->hid_s, 1);
+  if(dz2 == NULL || dz1 == NULL) {
+    free_mat(dz2);
+    free_mat(dz1);
+    return 0;
+  }
 
+  // Fase 1: calcular dz2 (sin tocar nada todavía)
   for(size_t i = 0; i < nn->out_s; ++i) {
     float da2 = getat_mat(nn->a2, i, 0) - getat_mat(tg, i, 0);
     setat_mat(dz2, i, 0, da2 * sigmoid_deriv(getat_mat(nn->a2, i, 0)));
+  }
+
+  // Fase 2: calcular dz1 usando w2 original
+  for(size_t i = 0; i < nn->hid_s; ++i) {
+    float da1 = 0.0f;
+    for(size_t k = 0; k < nn->out_s; ++k) {
+      da1 += getat_mat(dz2, k, 0) * getat_mat(nn->w2, k, i);
+    }
+    setat_mat(dz1, i, 0, da1 * sigmoid_deriv(getat_mat(nn->a1, i, 0)));
+  }
+
+  // Fase 3: actualizar pesos y biases
+  for(size_t i = 0; i < nn->out_s; ++i) {
     float dz2_val = getat_mat(dz2, i, 0);
     for(size_t k = 0; k < nn->hid_s; ++k) {
-      float w2_actual = getat_mat(nn->w2, i, k);
-      setat_mat(nn->w2, i, k, w2_actual - rate * dz2_val * getat_mat(nn->a1, k, 0));
+      setat_mat(nn->w2, i, k, getat_mat(nn->w2, i, k) - rate * dz2_val * getat_mat(nn->a1, k, 0));
     }
     setat_mat(nn->b2, i, 0, getat_mat(nn->b2, i, 0) - rate * dz2_val);
   }
 
   for(size_t i = 0; i < nn->hid_s; ++i) {
-    float da = 0;
-    for(size_t k = 0; k < nn->out_s; ++k) {
-      da += getat_mat(dz2, k, 0) * getat_mat(nn->w2, k, i);
+    float dz1_val = getat_mat(dz1, i, 0);
+    for(size_t l = 0; l < nn->in_s; ++l) {
+      setat_mat(nn->w1, i, l, getat_mat(nn->w1, i, l) - rate * dz1_val * getat_mat(x, l, 0));
     }
-    setat_mat(dz1, i, 0, da * sigmoid_deriv(getat_mat(nn->a1, i, 0)));
-    for(size_t l = 0; l < nn->w1->cols; ++l) {
-      float w1_actual = getat_mat(nn->w1, i, l);
-      setat_mat(nn->w1, i, l, w1_actual - rate * getat_mat(dz1, i, 0) * getat_mat(x, l, 0));
-    }
+    setat_mat(nn->b1, i, 0, getat_mat(nn->b1, i, 0) - rate * dz1_val);
   }
 
   free_mat(dz2);
