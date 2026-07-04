@@ -19,9 +19,10 @@ typedef struct node_s {
   tensor *grad;
 
   op_type op;
+  float scalar;        // solo lo usa OP_SCALE, el resto lo ignora
   
   struct node_s **prevs;
-  int n_prevs;
+  unsigned int n_prevs;
 } node;
 
 node *new_node(float *values, int *shape, int ndim, node **children, int n_child, op_type op);
@@ -38,6 +39,7 @@ void scale_node_back(node *n);
 node *matmul_node(node *n1, node *n2);
 void matmul_node_back(node *n);
 node *transpose_node(node *n);
+void transpose_node_back(node *n);
 node *mean_node(node *n);
 void mean_node_back(node *n);
 node *sum_node(node *n);

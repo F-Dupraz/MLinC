@@ -37,6 +37,8 @@ tensor *new_ten(float *values, int *shape, int ndim) {
 }
 
 void free_ten(tensor *ten) {
+  if(ten == NULL) return;
+
   free(ten->values);
   free(ten->shape);
   free(ten);
@@ -196,4 +198,28 @@ tensor *sigmoid_ten(tensor *ten) {
   }
 
   return res;
+}
+
+void add_inplace_ten(tensor *des, tensor *src) {
+  if(des->ndim != src->ndim || des->size != src->size) return;
+
+  for(unsigned int i = 0; i < des->size; ++i) {
+    des->values[i] += src->values[i];
+  }
+}
+
+void sub_inplace_ten(tensor *des, tensor *src) {
+  if(des->ndim != src->ndim || des->size != src->size) return;
+
+  for(unsigned int i = 0; i < des->size; ++i) {
+    des->values[i] -= src->values[i];
+  }
+}
+
+void mul_inplace_ten(tensor *des, tensor *src) {
+  if(des->ndim != src->ndim || des->size != src->size) return;
+
+  for(unsigned int i = 0; i < des->size; ++i) {
+    des->values[i] = des->values[i] * src->values[i];
+  }
 }

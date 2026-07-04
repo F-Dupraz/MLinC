@@ -4,8 +4,8 @@
 typedef struct tensor_s {
   float *values;
   int *shape;
-  int ndim;
-  int size;
+  unsigned int ndim;
+  unsigned int size;
 } tensor;
 
 tensor *new_ten(float *values, int *shape, int ndim);
@@ -22,3 +22,6 @@ tensor *sum_ten(tensor *ten);
 tensor *relu_ten(tensor *ten);
 tensor *sigmoid_ten(tensor *ten);
 
+void add_inplace_ten(tensor *des, tensor *src);
+void sub_inplace_ten(tensor *des, tensor *src);
+void mul_inplace_ten(tensor *des, tensor *src);

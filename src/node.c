@@ -22,6 +22,7 @@ node *new_node(float *values, int *shape, int ndim, node **children, int n_child
   n->data = d;
   n->grad = g;
   n->op = op;
+  n->scalar = 0.0f;
   n->n_prevs = n_child;
  
   if (n_child > 0) {
@@ -53,25 +54,232 @@ void free_node(node *n) {
   return;
 }
 
-node *add_node(node *n1, node *n2);
-void add_node_back(node *n);
-node *sub_node(node *n1, node *n2);
-void sub_node_back(node *n);
-node *mul_node(node *n1, node *n2);
-void mul_node_back(node *n);
-node *scale_node(float p, node *n);
-void scale_node_back(node *n);
-node *matmul_node(node *n1, node *n2);
-void matmul_node_back(node *n);
-node *transpose_node(node *n);
-node *mean_node(node *n);
-void mean_node_back(node *n);
-node *sum_node(node *n);
-void sum_node_back(node *n);
-node *relu_node(node *n);
-void relu_node_back(node *n);
-node *sigmoid_node(node *n);
-void sigmoid_node_back(node *n);
+node *add_node(node *n1, node *n2) {
+  node *children[] = {n1, n2};
+  tensor *sum = add_ten(n1->data, n2->data);
+  if(sum == NULL) return NULL;
+
+  node *new_n = new_node(sum->values, sum->shape, sum->ndim, children, 2, OP_ADD);
+  
+  free_ten(sum);
+
+  return new_n;
+}
+
+void add_node_back(node *n) {
+  add_inplace_ten(n->prevs[0]->grad, n->grad);
+  add_inplace_ten(n->prevs[1]->grad, n->grad);
+  
+  return;
+}
+
+node *sub_node(node *n1, node *n2) {
+  node *children[] = {n1, n2};
+  tensor *sub = sub_ten(n1->data, n2->data);
+  if(sub == NULL) return NULL;
+
+  node *new_n = new_node(sub->values, sub->shape, sub->ndim, children, 2, OP_SUB);
+
+  free_ten(sub);
+
+  return new_n;
+}
+
+void sub_node_back(node *n) {
+  add_inplace_ten(n->prevs[0]->grad, n->grad);
+  sub_inplace_ten(n->prevs[1]->grad, n->grad);
+
+  return;
+}
+
+node *mul_node(node *n1, node *n2) {
+  node *children[] = {n1, n2};
+  tensor *mul = mul_ten(n1->data, n2->data);
+  if(mul == NULL) return NULL;
+
+  node *new_n = new_node(mul->values, mul->shape, mul->ndim, children, 2, OP_MUL);
+
+  free_ten(mul);
+
+  return new_n;
+}
+
+void mul_node_back(node *n) {
+  tensor *nn1 = mul_ten(n->grad, n->prevs[1]->data);
+  tensor *nn2 = mul_ten(n->grad, n->prevs[0]->data);
+
+  add_inplace_ten(n->prevs[0]->grad, nn1);
+  add_inplace_ten(n->prevs[1]->grad, nn2);
+
+  free_ten(nn1);
+  free_ten(nn2);
+
+  return;
+}
+
+node *scale_node(float p, node *n) {
+  node *children[] = {n};
+  tensor *sc = scale_ten(p, n->data);
+  if(sc == NULL) return NULL;
+
+  node *new_n = new_node(sc->values, sc->shape, sc->ndim, children, 1, OP_SCALE);
+  if(new_n == NULL) {
+    free_ten(sc);
+    return NULL;
+  }
+  new_n->scalar = p;
+
+  free_ten(sc);
+
+  return new_n;
+}
+
+void scale_node_back(node *n) {
+  for(unsigned int i = 0; i < n->prevs[0]->grad->size; ++i) {
+    n->prevs[0]->grad->values[i] += n->grad->values[i] * n->scalar;
+  }
+
+  return;
+}
+
+node *matmul_node(node *n1, node *n2) {
+  node *children[] = {n1, n2};
+  tensor *mm = matmul_ten(n1->data, n2->data);
+  if(mm == NULL) return NULL;
+
+  node *new_n = new_node(mm->values, mm->shape, mm->ndim, children, 2, OP_MATMUL);
+
+  free_ten(mm);
+
+  return new_n;
+}
+
+void matmul_node_back(node *n) {
+  tensor *at = transpose_ten(n->prevs[0]->data);
+  tensor *bt = transpose_ten(n->prevs[1]->data);
+
+  tensor *dlda = matmul_ten(n->grad, bt);
+  tensor *dldb = matmul_ten(at, n->grad);
+
+  for(unsigned int i = 0; i < n->prevs[0]->grad->size; ++i) {
+    n->prevs[0]->grad->values[i] += dlda->values[i];
+  }
+
+  for(unsigned int j = 0; j < n->prevs[1]->grad->size; ++j) {
+    n->prevs[1]->grad->values[j] += dldb->values[j];
+  }
+
+  free_ten(at);
+  free_ten(bt);
+  free_ten(dlda);
+  free_ten(dldb);
+  
+  return;
+}
+
+node *transpose_node(node *n) {
+  node *children[] = {n};
+  tensor *tr = transpose_ten(n->data);
+  if(tr == NULL) return NULL;
+
+  node *new_n = new_node(tr->values, tr->shape, tr->ndim, children, 1, OP_TRANSPOSE);
+
+  free_ten(tr);
+
+  return new_n;
+}
+
+void transpose_node_back(node *n) {
+  tensor *t = transpose_ten(n->grad);
+
+  for(unsigned int i = 0; i < n->prevs[0]->grad->size; ++i) {
+    n->prevs[0]->grad->values[i] += t->values[i];
+  }
+
+  free_ten(t);
+
+  return;
+}
+
+node *mean_node(node *n) {
+  node *children[] = {n};
+  tensor *m = mean_ten(n->data);
+  if(m == NULL) return NULL;
+
+  node *new_n = new_node(m->values, m->shape, m->ndim, children, 1, OP_MEAN);
+
+  free_ten(m);
+
+  return new_n;
+}
+
+void mean_node_back(node *n) {
+  for(unsigned int i = 0; i < n->prevs[0]->grad->size; ++i) {
+    n->prevs[0]->grad->values[i] += n->grad->values[0] / n->prevs[0]->data->size;
+  }
+
+  return;
+}
+
+node *sum_node(node *n) {
+  node *children[] = {n};
+  tensor *s = sum_ten(n->data);
+  if(s == NULL) return NULL;
+
+  node * new_n = new_node(s->values, s->shape, s->ndim, children, 1, OP_SUM);
+  
+  free_ten(s);
+
+  return new_n;
+}
+  
+void sum_node_back(node *n) {
+  for(unsigned int i = 0; i < n->prevs[0]->grad->size; ++i) {
+    n->prevs[0]->grad->values[i] += n->grad->values[0];
+  }
+}
+
+node *relu_node(node *n) {
+  node *children[] = {n};
+  tensor *r = relu_ten(n->data);
+  if(r == NULL) return NULL;
+
+  node *new_n = new_node(r->values, r->shape, r->ndim, children, 1, OP_RELU);
+
+  free_ten(r);
+
+  return new_n;
+}
+
+void relu_node_back(node *n) {
+  for(unsigned int i = 0; i < n->prevs[0]->grad->size; ++i) {
+    if(n->prevs[0]->data->values[i] > 0) {
+      n->prevs[0]->grad->values[i] += n->grad->values[i];
+    }
+  }
+
+  return;
+}
+
+node *sigmoid_node(node *n) {
+  node *children[] = {n};
+  tensor *s = sigmoid_ten(n->data);
+  if(s == NULL) return NULL;
+
+  node *new_n = new_node(s->values, s->shape, s->ndim, children, 1, OP_SIGMOID);
+
+  free_ten(s);
+
+  return new_n;
+}
+
+void sigmoid_node_back(node *n) {
+  for(unsigned int i = 0; i < n->prevs[0]->grad->size; ++i) {
+    n->prevs[0]->grad->values[i] += n->grad->values[i] * n->data->values[i] * (1.0f - n->data->values[i]);
+  }
+
+  return;
+}
 
 void topo(node *n, node ***sorted, int *size, int *capacity);
 void backward(node *n);
