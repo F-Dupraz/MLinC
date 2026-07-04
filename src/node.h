@@ -1,42 +1,54 @@
 #include "./tensor.h"
 
+typedef enum {
+  OP_LEAF,
+  OP_ADD,
+  OP_SUB,
+  OP_MUL,
+  OP_SCALE,
+  OP_MATMUL,
+  OP_TRANSPOSE,
+  OP_MEAN,
+  OP_SUM,
+  OP_RELU,
+  OP_SIGMOID
+} op_type;
+
 typedef struct node_s {
   tensor *data; 
   tensor *grad;
 
-  char *op_name;
+  op_type op;
   
   struct node_s **prevs;
   int n_prevs;
-
-  void (*_backward)(struct node_s *t);
 } node;
 
-node *new_node(float *values, int *shape, int ndim, node **children, int n_child, char *op);
-void free_node(node *node);
+node *new_node(float *values, int *shape, int ndim, node **children, int n_child, op_type op);
+void free_node(node *n);
 
-node *add_node(node *node1, node *node2);
-node *add_node_back(node *node);
-node *sub_node(node *node1, node *node2);
-node *sub_node_back(node *node);
-node *mul_node(node *node1, node *node2);
-node *mul_node_back(node *node);
-node *scale_node(float p, node *node);
-node *scale_node_back(node *node);
-node *matmul_node(node *node1, node *node2);
-node *matmul_node_back(node *node);
-node *transpose_node(node *node);
-node *mean_node(node *node);
-node *mean_node_back(node *node);
-node *sum_node(node *node);
-node *sum_node_back(node *node);
-node *relu_node(node *node);
-node *relu_node_back(node *node);
-node *sigmoid_node(node *node);
-node *sigmoid_node_back(node *node);
+node *add_node(node *n1, node *n2);
+void add_node_back(node *n);
+node *sub_node(node *n1, node *n2);
+void sub_node_back(node *n);
+node *mul_node(node *n1, node *n2);
+void mul_node_back(node *n);
+node *scale_node(float p, node *n);
+void scale_node_back(node *n);
+node *matmul_node(node *n1, node *n2);
+void matmul_node_back(node *n);
+node *transpose_node(node *n);
+node *mean_node(node *n);
+void mean_node_back(node *n);
+node *sum_node(node *n);
+void sum_node_back(node *n);
+node *relu_node(node *n);
+void relu_node_back(node *n);
+node *sigmoid_node(node *n);
+void sigmoid_node_back(node *n);
 
 void topo(node *n, node ***sorted, int *size, int *capacity);
-void backward(node *node);
+void backward(node *n);
 
 typedef struct neuron_s {
   node **w;

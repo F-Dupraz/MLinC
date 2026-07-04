@@ -3,7 +3,7 @@
 
 #include "./node.h"
 
-node *new_node(float *values, int *shape, int ndim, node **children, int n_child, char *op) {
+node *new_node(float *values, int *shape, int ndim, node **children, int n_child, op_type op) {
   tensor *d = new_ten(values, shape, ndim);
   if (d == NULL) return NULL;
   tensor *g = new_ten(NULL, shape, ndim);
@@ -21,7 +21,8 @@ node *new_node(float *values, int *shape, int ndim, node **children, int n_child
 
   n->data = d;
   n->grad = g;
-  n->op_name = op;
+  n->op = op;
+  n->n_prevs = n_child;
  
   if (n_child > 0) {
     n->prevs = malloc(n_child * sizeof(node*));
@@ -36,32 +37,41 @@ node *new_node(float *values, int *shape, int ndim, node **children, int n_child
     n->prevs = NULL;
   } 
 
-  n->_backward = NULL;
-
   return n;
 }
 
-void free_node(node *node);
+void free_node(node *n) {
+  if(n == NULL) return;
 
-node *add_node(node *node1, node *node2);
-node *add_node_back(node *node);
-node *sub_node(node *node1, node *node2);
-node *sub_node_back(node *node);
-node *mul_node(node *node1, node *node2);
-node *mul_node_back(node *node);
-node *scale_node(float p, node *node);
-node *scale_node_back(node *node);
-node *matmul_node(node *node1, node *node2);
-node *matmul_node_back(node *node);
-node *transpose_node(node *node);
-node *mean_node(node *node);
-node *mean_node_back(node *node);
-node *sum_node(node *node);
-node *sum_node_back(node *node);
-node *relu_node(node *node);
-node *relu_node_back(node *node);
-node *sigmoid_node(node *node);
-node *sigmoid_node_back(node *node);
+  free_ten(n->data);
+  free_ten(n->grad);
+
+  free(n->prevs);
+
+  free(n);
+
+  return;
+}
+
+node *add_node(node *n1, node *n2);
+void add_node_back(node *n);
+node *sub_node(node *n1, node *n2);
+void sub_node_back(node *n);
+node *mul_node(node *n1, node *n2);
+void mul_node_back(node *n);
+node *scale_node(float p, node *n);
+void scale_node_back(node *n);
+node *matmul_node(node *n1, node *n2);
+void matmul_node_back(node *n);
+node *transpose_node(node *n);
+node *mean_node(node *n);
+void mean_node_back(node *n);
+node *sum_node(node *n);
+void sum_node_back(node *n);
+node *relu_node(node *n);
+void relu_node_back(node *n);
+node *sigmoid_node(node *n);
+void sigmoid_node_back(node *n);
 
 void topo(node *n, node ***sorted, int *size, int *capacity);
-void backward(node *node);
+void backward(node *n);
