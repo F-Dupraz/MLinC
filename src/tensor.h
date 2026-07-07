@@ -1,6 +1,9 @@
 // This file is inspired in the micrograd.c from Jaykef and the tensor.h from apoorvnandan.
 // This may look redundant with the mat files, but it a learning project so everything stays.
 
+#ifndef TENSOR_H
+#define TENSOR_H
+
 typedef struct tensor_s {
   float *values;
   int *shape;
@@ -25,3 +28,5 @@ tensor *sigmoid_ten(tensor *ten);
 void add_inplace_ten(tensor *des, tensor *src);
 void sub_inplace_ten(tensor *des, tensor *src);
 void mul_inplace_ten(tensor *des, tensor *src);
+
+#endif // TENSOR_H

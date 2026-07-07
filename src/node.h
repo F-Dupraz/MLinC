@@ -1,3 +1,6 @@
+#ifndef NODE_H
+#define NODE_H
+
 #include "./tensor.h"
 
 typedef enum {
@@ -23,6 +26,8 @@ typedef struct node_s {
   
   struct node_s **prevs;
   unsigned int n_prevs;
+
+  int is_topo;
 } node;
 
 node *new_node(float *values, int *shape, int ndim, node **children, int n_child, op_type op);
@@ -69,3 +74,5 @@ typedef struct mlp_s {
   layer **layers;
   int layers_s;
 } mlp;
+
+#endif // NODE_H

@@ -55,6 +55,12 @@ tensor *add_ten(tensor *ten1, tensor *ten2) {
     return NULL;
   }
 
+  for(unsigned int i = 0; i < ten1->ndim; ++i) {
+    if(ten1->shape[i] != ten2->shape[i]) {
+      return NULL;
+    }
+  }
+
   tensor *res = new_ten(NULL, ten1->shape, ten1->ndim);
   if(res == NULL) return NULL;
 
@@ -70,6 +76,12 @@ tensor *sub_ten(tensor *ten1, tensor *ten2) {
     return NULL;
   } else if(ten1->ndim != ten2->ndim) {
     return NULL;
+  }
+
+  for(unsigned int i = 0; i < ten1->ndim; ++i) {
+    if(ten1->shape[i] != ten2->shape[i]) {
+      return NULL;
+    }
   }
 
   tensor *res = new_ten(NULL, ten1->shape, ten1->ndim);
@@ -98,6 +110,12 @@ tensor *mul_ten(tensor *ten1, tensor *ten2) {
     return NULL;
   } else if(ten1->ndim != ten2->ndim) {
     return NULL;
+  }
+
+  for(unsigned int i = 0; i < ten1->ndim; ++i) {
+    if(ten1->shape[i] != ten2->shape[i]) {
+      return NULL;
+    }
   }
 
   tensor *res = new_ten(NULL, ten1->shape, ten1->ndim);

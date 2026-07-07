@@ -23,6 +23,7 @@ node *new_node(float *values, int *shape, int ndim, node **children, int n_child
   n->grad = g;
   n->op = op;
   n->scalar = 0.0f;
+  n->is_topo = 0;
   n->n_prevs = n_child;
  
   if (n_child > 0) {
@@ -281,5 +282,89 @@ void sigmoid_node_back(node *n) {
   return;
 }
 
-void topo(node *n, node ***sorted, int *size, int *capacity);
-void backward(node *n);
+void topo(node *n, node ***sorted, int *size, int *capacity) {
+  n->is_topo = 1;
+
+  if(n->n_prevs != 0) {
+    for(unsigned int i = 0; i < n->n_prevs; ++i) {
+      if(n->prevs[i]->is_topo == 0) {
+        topo(n->prevs[i], sorted, size, capacity);
+      }
+    }
+  }
+
+  if(*size >= *capacity) {
+    *capacity *= 2;
+    node **tmp = realloc(*sorted, *capacity * sizeof(node*));
+    if (!tmp) {
+      return;
+    }
+    *sorted = tmp;
+  }
+
+  (*sorted)[(*size)++] = n;
+}
+
+void reset_topo(node *n) {
+  if (n->is_topo == 0) return;
+  n->is_topo = 0;
+  for (unsigned int i = 0; i < n->n_prevs; ++i)
+    reset_topo(n->prevs[i]);
+}
+
+void backward(node *n) {
+  int size = 0;
+  int cap = 10;
+  node **topo_list = malloc(cap * sizeof(node*));
+  if(topo_list == NULL) {
+    return;
+  }
+  topo(n, &topo_list, &size, &cap);
+
+  for(unsigned int i = 0; i < n->grad->size; ++i) {
+    n->grad->values[i] = 1.0f;
+  }
+
+  for(int j = size-1; j >= 0; --j) {
+    switch (topo_list[j]->op) {
+      case OP_LEAF:
+        break;
+      case OP_ADD:
+        add_node_back(topo_list[j]);
+        break;
+      case OP_SUB:
+        sub_node_back(topo_list[j]);
+        break; 
+      case OP_MUL:
+        mul_node_back(topo_list[j]);
+        break; 
+      case OP_SCALE:
+        scale_node_back(topo_list[j]);
+        break; 
+      case OP_MATMUL:
+        matmul_node_back(topo_list[j]);
+        break; 
+      case OP_TRANSPOSE:
+        transpose_node_back(topo_list[j]);
+        break; 
+      case OP_MEAN:
+        mean_node_back(topo_list[j]);
+        break; 
+      case OP_SUM:
+        sum_node_back(topo_list[j]);
+        break; 
+      case OP_RELU:
+        relu_node_back(topo_list[j]);
+        break; 
+      case OP_SIGMOID:
+        sigmoid_node_back(topo_list[j]);
+        break; 
+    }
+  }
+
+  reset_topo(n);
+
+  free(topo_list);
+
+  return;
+}
