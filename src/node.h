@@ -32,6 +32,7 @@ typedef struct node_s {
 
 node *new_node(float *values, int *shape, int ndim, node **children, int n_child, op_type op);
 void free_node(node *n);
+void zero_grad(node *n);
 
 node *add_node(node *n1, node *n2);
 void add_node_back(node *n);
