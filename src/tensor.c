@@ -138,9 +138,9 @@ tensor *matmul_ten(tensor *ten1, tensor *ten2) {
   tensor *res = new_ten(NULL, (int[]){ten1->shape[0], ten2->shape[1]}, 2);
   if(res == NULL) return NULL;
 
-  for(unsigned int i = 0; i < ten1->shape[0]; ++i) {
-    for(unsigned int j = 0; j < ten2->shape[1]; ++j) {
-      for(unsigned int k = 0; k < ten1->shape[1]; ++k) {
+  for(int i = 0; i < ten1->shape[0]; ++i) {
+    for(int j = 0; j < ten2->shape[1]; ++j) {
+      for(int k = 0; k < ten1->shape[1]; ++k) {
         res->values[i * res->shape[1] + j] += ten1->values[i * ten1->shape[1] + k] * ten2->values[k * ten2->shape[1] + j];
       }
     }
@@ -157,8 +157,8 @@ tensor *transpose_ten(tensor *ten) {
   tensor *res = new_ten(NULL, (int[]){ten->shape[1], ten->shape[0]}, 2);
   if(res == NULL) return NULL;
 
-  for(unsigned int i = 0; i < ten->shape[0]; ++i) {
-    for(unsigned int j = 0; j < ten->shape[1]; ++j) {
+  for(int i = 0; i < ten->shape[0]; ++i) {
+    for(int j = 0; j < ten->shape[1]; ++j) {
       res->values[j * res->shape[1] + i] = ten->values[i * ten->shape[1] + j];
     }
   }

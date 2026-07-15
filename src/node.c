@@ -55,12 +55,6 @@ void free_node(node *n) {
   return;
 }
 
-void zero_grad(node *n) {
-  for (unsigned int i = 0; i < n->grad->size; ++i) {
-    n->grad->values[i] = 0.0f;
-  }
-}
-
 node *add_node(node *n1, node *n2) {
   node *children[] = {n1, n2};
   tensor *sum = add_ten(n1->data, n2->data);
