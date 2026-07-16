@@ -221,6 +221,127 @@ void check_mul(node *a, node *b) {
   free_node(y);
 }
 
+// We utilize sum for simplicity
+void check_matmul(node *a, node *b) {
+  zero_grad(a);
+  zero_grad(b);
+
+  node *y = matmul_node(a, b);
+  node *loss = sum_node(y);
+  backward(loss);
+
+  for(unsigned int i = 0; i < a->data->size; ++i) {
+    float analytic_a = a->grad->values[i];
+    float value_a = a->data->values[i];
+
+    a->data->values[i] = value_a + EPS;
+    node *y_plus_a = matmul_node(a, b);
+    node *l_plus_a = sum_node(y_plus_a);
+    float f_plus_a = l_plus_a->data->values[0];
+    free_node(y_plus_a);
+    free_node(l_plus_a);
+
+    a->data->values[i] = value_a - EPS;
+    node *y_minus_a = matmul_node(a, b);
+    node *l_minus_a = sum_node(y_minus_a);
+    float f_minus_a = l_minus_a->data->values[0];
+    free_node(y_minus_a);
+    free_node(l_minus_a);
+
+    a->data->values[i] = value_a;
+
+    float numeric_a = (f_plus_a - f_minus_a) / (2.0f * EPS);
+
+    printf("Analytic value a: %f\n", analytic_a);
+    printf("Numeric value a: %f\n", numeric_a);
+    if (rel_error(numeric_a, analytic_a) > TOL) {
+      printf("FAIL en 'a': analitico=%f numerico=%f err=%f\n",
+         analytic_a, numeric_a, rel_error(numeric_a, analytic_a));
+    } else {
+      printf("PASS en 'a'\n");
+    }
+  }
+
+  for(unsigned int i = 0; i < b->data->size; ++i) {
+    float analytic_b = b->grad->values[i];
+    float value_b = b->data->values[i];
+
+    b->data->values[i] = value_b + EPS;
+    node *y_plus_b = matmul_node(a, b);
+    node *l_plus_b = sum_node(y_plus_b);
+    float f_plus_b = l_plus_b->data->values[0];
+    free_node(y_plus_b);
+    free_node(l_plus_b);
+
+    b->data->values[i] = value_b - EPS;
+    node *y_minus_b = matmul_node(a, b);
+    node *l_minus_b = sum_node(y_minus_b);
+    float f_minus_b = l_minus_b->data->values[0];
+    free_node(y_minus_b);
+    free_node(l_minus_b);
+
+    b->data->values[i] = value_b;
+
+    float numeric_b = (f_plus_b - f_minus_b) / (2.0f * EPS);
+
+    printf("Analytic value b: %f\n", analytic_b);
+    printf("Numeric value b: %f\n", numeric_b);
+    if (rel_error(numeric_b, analytic_b) > TOL) {
+      printf("FAIL en 'b': analitico=%f numerico=%f err=%f\n",
+         analytic_b, numeric_b, rel_error(numeric_b, analytic_b));
+    } else {
+      printf("PASS en 'b'\n");
+    }
+  }
+
+  free_node(loss);
+  free_node(y);
+}
+
+// We utilize sum for simplicity
+void check_transpose(node *a) {
+  zero_grad(a);
+
+  node *y = transpose_node(a);
+  node *loss = sum_node(y);
+  backward(loss);
+
+  for(unsigned int i = 0; i < a->data->size; ++i) {
+    float analytic_a = a->grad->values[i];
+    float value_a = a->data->values[i];
+
+    a->data->values[i] = value_a + EPS;
+    node *y_plus_a = transpose_node(a);
+    node *l_plus_a = sum_node(y_plus_a);
+    float f_plus_a = l_plus_a->data->values[0];
+    free_node(y_plus_a);
+    free_node(l_plus_a);
+
+    a->data->values[i] = value_a - EPS;
+    node *y_minus_a = transpose_node(a);
+    node *l_minus_a = sum_node(y_minus_a);
+    float f_minus_a = l_minus_a->data->values[0];
+    free_node(y_minus_a);
+    free_node(l_minus_a);
+
+    a->data->values[i] = value_a;
+
+    float numeric_a = (f_plus_a - f_minus_a) / (2.0f * EPS);
+
+    printf("Analytic value a: %f\n", analytic_a);
+    printf("Numeric value a: %f\n", numeric_a);
+    if (rel_error(numeric_a, analytic_a) > TOL) {
+      printf("FAIL en 'a': analitico=%f numerico=%f err=%f\n",
+         analytic_a, numeric_a, rel_error(numeric_a, analytic_a));
+    } else {
+      printf("PASS en 'a'\n");
+    }
+  }
+
+  free_node(loss);
+  free_node(y);
+}
+
 void check_mean(node *a) {
   zero_grad(a);
 
@@ -431,6 +552,14 @@ int main(void) {
   printf("\n\n");
   printf("=== check_mul ===\n");
   check_mul(a, b);
+
+  printf("\n\n");
+  printf("=== check_matmul ===\n");
+  check_matmul(a, b);
+
+  printf("\n\n");
+  printf("=== check_transpose ===\n");
+  check_transpose(a);
 
   printf("\n\n");
   printf("=== check_mean ===\n");
