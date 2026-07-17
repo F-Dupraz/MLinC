@@ -18,7 +18,6 @@ tensor *new_ten(float *values, int *shape, int ndim) {
 
   ten->shape = malloc(ndim * sizeof(int));
   if(ten->shape == NULL) {
-    free(ten->shape);
     free(ten);
     return NULL;
   }

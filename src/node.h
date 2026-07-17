@@ -57,22 +57,4 @@ void sigmoid_node_back(node *n);
 void topo(node *n, node ***sorted, int *size, int *capacity);
 void backward(node *n);
 
-typedef struct neuron_s {
-  node **w;
-  node *b;
-  int in_s;
-  int nonlin;
-} neuron;
-
-typedef struct layer_s {
-  neuron **neurons;
-  int in_s;
-  int out_s;
-} layer;
-
-typedef struct mlp_s {
-  layer **layers;
-  int layers_s;
-} mlp;
-
 #endif // NODE_H

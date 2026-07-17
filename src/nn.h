@@ -4,37 +4,33 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "./mat.h"
+#include "./node.h"
 
-//---------- Defining the neural network ----------//
-typedef struct nn_t {
-  // Layer 1
-  // Weights
-  mat *w1;
-  // Biases
-  mat *b1;
+typedef enum { 
+  ACT_NONE, 
+  ACT_SIGMOID, 
+  ACT_RELU 
+} act_type;
 
-  // Layer 2 (output)
-  // Weights
-  mat *w2;
-  // Biases
-  mat *b2;
+typedef struct layer_s {
+  node *weights;
+  node *biases;
+  int in_s;
+  int out_s;
+  act_type act;
+} layer;
 
-  // Size of inputs, hidden and outputs
-  size_t in_s, hid_s, out_s;
+typedef struct nn_s {
+  layer **layers;
+  int layers_s;
+} nn;
 
-  // Forward pass caches
-  mat *a1, *z1, *a2, *z2;
-} nn_t;
+layer *new_layer(int in_s, int out_s, act_type act);
+void free_layer(layer *l);
+node **call_layer(layer *l, node *x);
 
-nn_t *new_nn(size_t in_s, size_t hid_s, size_t out_s);
-nn_t *read_nn(FILE *nn_file);
-void free_nn(nn_t *nn);
-void randomize_nn(nn_t *nn);
+nn *new_nn(int in_s, int *outs_s, int layers_s);
+void free_nn(nn *nn);
+node *call_nn(nn *nn, node *x);
 
-int write_nn(nn_t const *nn, FILE *nn_file);
-
-mat *predict_nn(nn_t *nn, mat *x);
-int train_nn(nn_t *nn, const mat *x, const mat *tg, float rate);
-
-#endif //NN_H
+#endif // NN_H
