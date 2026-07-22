@@ -1,60 +1,57 @@
-#include <stdio.h>
-
 #include "../src/nn.h"
-#include "../src/mat.h"
 
 #define NUM_EPOCHS 3000
 
 int main() {
-  nn_t *xor_test = new_nn(2, 4, 1);
-
-  randomize_nn(xor_test);
+  int outs[2] = {4, 1};
+  act_type act[2] = {ACT_SIGMOID, ACT_SIGMOID};
+  nn *net = new_nn(2, outs, 2, act);
+  tensor *xs[4], *ys[4];
   
-  float X[4][2] = {
-      {0.0, 0.0},
-      {0.0, 1.0},
-      {1.0, 0.0},
-      {1.0, 1.0}
-  };
+  // TODO: crear los 4 leaves (x: {2,1}, y: {1,1})
+  int x_shape[2] = {2, 1};
+  int y_shape[2] = {1, 1};
 
-  float Y[4] = {0.0, 1.0, 1.0, 0.0};
+  // ejemplo 0: (0,0) → 0
+  float x0[2] = {0.0f, 0.0f};
+  float y0[1] = {0.0f};
+  xs[0] = new_ten(x0, x_shape, 2);
+  ys[0] = new_ten(y0, y_shape, 2);
 
-  float lr = 2;
-  
-  mat *current_x = new_mat(2, 1);
-  mat *current_y = new_mat(1, 1);
-  
-  for(int epoch = 0; epoch < NUM_EPOCHS; epoch++) {
-    double total_loss = 0.0;
-    for(int i = 0; i < 4; ++i) {
-      setat_mat(current_x, 0, 0, X[i][0]);
-      setat_mat(current_x, 1, 0, X[i][1]);
-      setat_mat(current_y, 0, 0, Y[i]);
+  // ejemplo 1: (0,1) → 1
+  float x1[2] = {0.0f, 1.0f};
+  float y1[1] = {1.0f};
+  xs[1] = new_ten(x1, x_shape, 2);
+  ys[1] = new_ten(y1, y_shape, 2); 
 
-      train_nn(xor_test, current_x, current_y, lr);
-      
-      float diff = getat_mat(xor_test->a2, 0, 0) - Y[i];
-      total_loss += 0.5f * diff * diff;
-    }
+  // ejemplo 2: (1,0) → 1
+  float x2[2] = {1.0f, 0.0f};
+  float y2[1] = {1.0f};
+  xs[2] = new_ten(x2, x_shape, 2);
+  ys[2] = new_ten(y2, y_shape, 2); 
 
-    if(epoch % 100 == 0) {
-      printf("Epoch %d | Loss: %f\n", epoch, total_loss/4.0);
-    }
+  // ejemplo 3: (1,1) → 0
+  float x3[2] = {1.0f, 1.0f};
+  float y3[1] = {0.0f};
+  xs[3] = new_ten(x3, x_shape, 2);
+  ys[3] = new_ten(y3, y_shape, 2); 
+
+  train(net, xs, ys, 4, NUM_EPOCHS, 2.0f);      // entrena in-place sobre net
+
+  for (int i = 0; i < 4; ++i) {
+    tensor *p = predict(net, xs[i]);
+
+    printf("Entrada %f, %f : retorna %f\n", xs[i]->values[0], xs[i]->values[1], p->values[0]);
+    
+    free_ten(p);                          // caller libera la copia
   }
 
   for(int j = 0; j < 4; ++j) {
-    setat_mat(current_x, 0, 0, X[j][0]);
-    setat_mat(current_x, 1, 0, X[j][1]);
-
-    mat *result = predict_nn(xor_test, current_x);
-    
-    printf("Para %f, %f, obtenemos: %f\n", getat_mat(current_x, 0, 0), getat_mat(current_x, 1, 0), getat_mat(result, 0, 0));
+    free_ten(xs[j]);
+    free_ten(ys[j]);
   }
 
-  free_mat(current_x);
-  free_mat(current_y);
-
-  free_nn(xor_test);
-
+  free_nn(net);
+  
   return 0;
 }

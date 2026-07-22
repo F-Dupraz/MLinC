@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -O2 -Wall
 
-xor: examples/xor.c src/mat.c src/nn.c src/activations.c
+xor: examples/xor.c src/tensor.c src/nn.c src/node.c
 	$(CC) $(CFLAGS) $^ -lm -o $@
 
 clean:

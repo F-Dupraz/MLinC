@@ -30,6 +30,18 @@ typedef struct node_s {
   int is_topo;
 } node;
 
+typedef struct arena_s {
+  node **nodes;
+  int size;
+  int capacity;
+} arena_t;
+
+void set_arena(arena_t *a);
+void init_arena(arena_t *a);
+void push_arena(arena_t *a, node *n);
+void reset_arena(arena_t *a);
+void clear_arena(arena_t *a);
+
 node *new_node(float *values, int *shape, int ndim, node **children, int n_child, op_type op);
 void free_node(node *n);
 

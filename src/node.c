@@ -3,6 +3,53 @@
 
 #include "./node.h"
 
+static arena_t *current_arena = NULL;
+
+void set_arena(arena_t *a) {
+  current_arena = a;
+}
+
+void init_arena(arena_t *a) {
+  a->size = 0;
+  a->capacity = 10;
+  a->nodes = malloc(10 * sizeof(node*));
+
+  return;
+}
+
+void push_arena(arena_t *a, node *n) {
+  a->size += 1;
+
+  if(a->size > a->capacity) {
+    a->capacity *= 2;
+    node **new_nodes = malloc(a->capacity * sizeof(node*));
+    memcpy(new_nodes, a->nodes, a->capacity/2 * sizeof(node*));
+    node **old_nodes = a->nodes;
+    a->nodes = new_nodes;
+    free(old_nodes);
+  }
+
+  a->nodes[a->size-1] = n;
+
+  return;
+}
+
+void reset_arena(arena_t *a) {
+  for (int i = 0; i < a->size; ++i)
+    free_node(a->nodes[i]);
+  a->size = 0;
+}
+
+void clear_arena(arena_t *a) {
+  for(int i = 0; i < a->size; ++i) {
+    free_node(a->nodes[i]);
+  }
+
+  free(a->nodes);
+  
+  return;
+}
+
 node *new_node(float *values, int *shape, int ndim, node **children, int n_child, op_type op) {
   tensor *d = new_ten(values, shape, ndim);
   if (d == NULL) return NULL;
@@ -37,7 +84,11 @@ node *new_node(float *values, int *shape, int ndim, node **children, int n_child
     memcpy(n->prevs, children, n_child * sizeof(node*));
   } else {
     n->prevs = NULL;
-  } 
+  }
+
+  if(current_arena != NULL && op != OP_LEAF) {
+    push_arena(current_arena, n);
+  }
 
   return n;
 }
