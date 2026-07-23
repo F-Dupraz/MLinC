@@ -537,10 +537,102 @@ void check_sigmoid(node *a) {
   free_node(y);
 }
 
+// We utilize sum for simplicity
+void check_softmax(node *a) {
+  zero_grad(a);
+  float w_vals[] = {0.3f, 1.7f, -0.5f, 2.1f};
+  node *w = new_node(w_vals, a->data->shape, a->data->ndim, NULL, 0, OP_LEAF);
+  node *y = softmax_node(a);
+  node *weighted = mul_node(y, w);
+  node *loss = sum_node(weighted);
+  backward(loss);
+
+  for(unsigned int i = 0; i < a->data->size; ++i) {
+    float analytic_a = a->grad->values[i];
+    float value_a = a->data->values[i];
+
+    a->data->values[i] = value_a + EPS;
+    node *y_plus_a = softmax_node(a);
+    node *w_plus_a = mul_node(y_plus_a, w);
+    node *l_plus_a = sum_node(w_plus_a);
+    float f_plus_a = l_plus_a->data->values[0];
+    free_node(y_plus_a);
+    free_node(w_plus_a);
+    free_node(l_plus_a);
+
+    a->data->values[i] = value_a - EPS;
+    node *y_minus_a = softmax_node(a);
+    node *w_minus_a = mul_node(y_minus_a, w);
+    node *l_minus_a = sum_node(w_minus_a);
+    float f_minus_a = l_minus_a->data->values[0];
+    free_node(y_minus_a);
+    free_node(w_minus_a);
+    free_node(l_minus_a);
+
+    a->data->values[i] = value_a;
+
+    float numeric_a = (f_plus_a - f_minus_a) / (2.0f * EPS);
+
+    printf("Analytic value a: %f\n", analytic_a);
+    printf("Numeric value a: %f\n", numeric_a);
+    if (rel_error(numeric_a, analytic_a) > TOL) {
+      printf("FAIL en 'a': analitico=%f numerico=%f err=%f\n",
+         analytic_a, numeric_a, rel_error(numeric_a, analytic_a));
+    } else {
+      printf("PASS en 'a'\n");
+    }
+  }
+
+  free_node(loss);
+  free_node(w);
+  free_node(weighted);
+  free_node(y);
+}
+
+void check_ce(node *pred, node *y) {
+  zero_grad(pred);
+  zero_grad(y);
+
+  node *loss = cross_entropy_loss_node(pred, y);
+  backward(loss);
+
+  for(unsigned int i = 0; i < pred->data->size; ++i) {
+    float analytic_pred = pred->grad->values[i];
+    float value_pred = pred->data->values[i];
+
+    pred->data->values[i] = value_pred + EPS;
+    node *l_plus = cross_entropy_loss_node(pred, y);
+    float f_plus = l_plus->data->values[0];
+    free_node(l_plus);
+
+    pred->data->values[i] = value_pred - EPS;
+    node *l_minus = cross_entropy_loss_node(pred, y);
+    float f_minus = l_minus->data->values[0];
+    free_node(l_minus);
+
+    pred->data->values[i] = value_pred;
+
+    float numeric_pred = (f_plus - f_minus) / (2.0f * EPS);
+
+    printf("Analytic value pred: %f\n", analytic_pred);
+    printf("Numeric value pred: %f\n", numeric_pred);
+    if (rel_error(numeric_pred, analytic_pred) > TOL) {
+      printf("FAIL en 'pred': analitico=%f numerico=%f err=%f\n",
+         analytic_pred, numeric_pred, rel_error(numeric_pred, analytic_pred));
+    } else {
+      printf("PASS en 'pred'\n");
+    }
+  }
+
+  free_node(loss);
+}
 int main(void) {
   int shape[] = {2, 2};
+  int shape_loss[] = {4, 1};
   node *a = new_node((float[]){2.0f, 2.0f, 2.0f, 2.0f}, shape, 2, NULL, 0, OP_LEAF);
   node *b = new_node((float[]){1.0f, 2.0f, 2.0f, 1.0f}, shape, 2, NULL, 0, OP_LEAF);
+  node *pred = new_node((float[]){0.7f, 0.1f, 0.1f, 0.1f}, shape_loss, 2, NULL, 0, OP_LEAF);
+  node *y = new_node((float[]){1.0f, 0.0f, 0.0f, 0.0f}, shape_loss, 2, NULL, 0, OP_LEAF);
 
   printf("=== check_add ===\n");
   check_add(a, b);
@@ -581,8 +673,18 @@ int main(void) {
   printf("=== check_sigmoid ===\n");
   check_sigmoid(a);
 
+  printf("\n\n");
+  printf("=== check_softmax ===\n");
+  check_softmax(a);
+
+  printf("\n\n");
+  printf("=== check_ce ===\n");
+  check_ce(pred, y);
+
   free_node(a);
   free_node(b);
+  free_node(pred);
+  free_node(y);
 
   return 0;
 }

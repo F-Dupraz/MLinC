@@ -36,7 +36,7 @@ int main() {
   xs[3] = new_ten(x3, x_shape, 2);
   ys[3] = new_ten(y3, y_shape, 2); 
 
-  train(net, xs, ys, 4, NUM_EPOCHS, 2.0f);      // entrena in-place sobre net
+  train(net, xs, ys, 4, NUM_EPOCHS, 2.0f, MSE);      // entrena in-place sobre net
 
   for (int i = 0; i < 4; ++i) {
     tensor *p = predict(net, xs[i]);

@@ -107,7 +107,11 @@ node *call_layer(layer *l, node *x) {
     if (output_s == NULL) return NULL;
     return output_s;
   }
-
+  case ACT_SOFTMAX: {
+    node *output_sm = softmax_node(add_bias);
+    if (output_sm == NULL) return NULL;
+    return output_sm;
+  }
   case ACT_RELU: {
     node *output_r = relu_node(add_bias);
     if (output_r == NULL) return NULL;
@@ -185,6 +189,12 @@ node *mse(node *pred, node *y) {
   return loss;
 }
 
+node *cross_entropy(node *pred, node *y) {
+  node *ce = cross_entropy_loss_node(pred, y);
+
+  return ce;
+}
+
 void update(nn *nn, float lr) {
   for(int i = 0; i < nn->layers_s; ++i) {
     tensor *step_w = scale_ten(lr, nn->layers[i]->weights->grad);
@@ -231,7 +241,7 @@ tensor *predict(nn *nn, tensor *x) {
   return result;
 }
 
-void train(nn *nn, tensor **xs, tensor **ys, int n, int epochs, float lr) {
+void train(nn *nn, tensor **xs, tensor **ys, int n, int epochs, float lr, loss_t lt) {
   arena_t tape;
   init_arena(&tape);
   set_arena(&tape);
@@ -243,7 +253,18 @@ void train(nn *nn, tensor **xs, tensor **ys, int n, int epochs, float lr) {
       node *n_xs = new_node(xs[i]->values, xs[i]->shape, xs[i]->ndim, NULL, 0, OP_LEAF);
       node *output = call_nn(nn, n_xs);
       node *n_ys = new_node(ys[i]->values, ys[i]->shape, ys[i]->ndim, NULL, 0, OP_LEAF);
-      node *loss = mse(output, n_ys);
+      node *loss;
+      switch (lt) {
+        case MSE:
+          loss = mse(output, n_ys);
+          break;
+        case CROSS_ENTROPY:
+          loss = cross_entropy(output, n_ys);
+          break;
+        default:
+          loss = NULL;
+          break;
+      }
       epoch_loss += loss->data->values[0];
 
       zero_grad(nn);

@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "./node.h"
+#include "tensor.h"
 
 static arena_t *current_arena = NULL;
 
@@ -333,6 +334,58 @@ void sigmoid_node_back(node *n) {
   return;
 }
 
+node *softmax_node(node* n) {
+  node *children[] = {n};
+  tensor *s = softmax_ten(n->data);
+  if(s == NULL) return NULL;
+
+  node *new_n = new_node(s->values, s->shape, s->ndim, children, 1, OP_SOFTMAX);
+
+  free_ten(s);
+
+  return new_n;
+}
+
+void softmax_node_back(node *n) {
+  unsigned int rows = n->data->shape[0];
+  unsigned int cols = n->data->shape[1];
+
+  for(unsigned int k = 0; k < cols; ++k) {
+    float dot = 0.0f;
+    for(unsigned int j = 0; j < rows; ++j) {
+      dot += n->grad->values[k + j*cols] * n->data->values[k + j*cols];
+    }
+
+    for(unsigned int j = 0; j < rows; ++j) {
+      float pred_j = n->data->values[k + j*cols];
+      float g_j = n->grad->values[k + j*cols];
+      n->prevs[0]->grad->values[k + j*cols] += pred_j * (g_j - dot);
+    }
+  }
+
+  return;
+}
+
+node *cross_entropy_loss_node(node *pred, node *y) {
+  node *children[] = {pred, y};
+  tensor *ce = cross_entropy_loss_ten(pred->data, y->data);
+  if(ce == NULL) return NULL;
+
+  node *new_n = new_node(ce->values, ce->shape, ce->ndim, children, 2, OP_CE);
+
+  free_ten(ce);
+
+  return new_n;
+}
+
+void cross_entropy_loss_node_back(node *n) {
+  for(unsigned int i = 0; i < n->prevs[0]->grad->size; ++i) {
+    n->prevs[0]->grad->values[i] += n->grad->values[0] * (-n->prevs[1]->data->values[i] / (n->prevs[0]->data->values[i] + EPS_CE)); 
+  }
+
+  return;
+}
+
 void topo(node *n, node ***sorted, int *size, int *capacity) {
   n->is_topo = 1;
 
@@ -409,7 +462,13 @@ void backward(node *n) {
         break; 
       case OP_SIGMOID:
         sigmoid_node_back(topo_list[j]);
-        break; 
+        break;
+      case OP_SOFTMAX:
+        softmax_node_back(topo_list[j]);
+        break;
+      case OP_CE:
+        cross_entropy_loss_node_back(topo_list[j]);
+        break;
     }
   }
 

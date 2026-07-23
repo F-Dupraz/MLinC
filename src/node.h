@@ -14,7 +14,9 @@ typedef enum {
   OP_MEAN,
   OP_SUM,
   OP_RELU,
-  OP_SIGMOID
+  OP_SIGMOID,
+  OP_SOFTMAX,
+  OP_CE
 } op_type;
 
 typedef struct node_s {
@@ -65,6 +67,11 @@ node *relu_node(node *n);
 void relu_node_back(node *n);
 node *sigmoid_node(node *n);
 void sigmoid_node_back(node *n);
+node *softmax_node(node *n);
+void softmax_node_back(node *n);
+
+node *cross_entropy_loss_node(node *pred, node *y);
+void cross_entropy_loss_node_back(node *n);
 
 void topo(node *n, node ***sorted, int *size, int *capacity);
 void backward(node *n);

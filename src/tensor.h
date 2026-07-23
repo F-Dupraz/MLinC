@@ -4,6 +4,8 @@
 #ifndef TENSOR_H
 #define TENSOR_H
 
+#define EPS_CE 1e-8f
+
 typedef struct tensor_s {
   float *values;
   int *shape;
@@ -24,6 +26,9 @@ tensor *mean_ten(tensor *ten);
 tensor *sum_ten(tensor *ten);
 tensor *relu_ten(tensor *ten);
 tensor *sigmoid_ten(tensor *ten);
+tensor *softmax_ten(tensor *ten);
+
+tensor *cross_entropy_loss_ten(tensor *pred, tensor *y);
 
 void add_inplace_ten(tensor *des, tensor *src);
 void sub_inplace_ten(tensor *des, tensor *src);

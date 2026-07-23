@@ -207,6 +207,10 @@ tensor *relu_ten(tensor *ten) {
 }
 
 tensor *sigmoid_ten(tensor *ten) {
+  if(ten->ndim != 2) {
+    return NULL;
+  }
+
   tensor *res = new_ten(NULL, ten->shape, ten->ndim);
   if(res == NULL) return NULL;
 
@@ -216,6 +220,55 @@ tensor *sigmoid_ten(tensor *ten) {
 
   return res;
 }
+
+tensor *softmax_ten(tensor *ten) {
+  if(ten->ndim != 2) return NULL;
+
+  tensor *res = new_ten(NULL, ten->shape, ten->ndim);
+  if(res == NULL) return NULL;
+
+  for(unsigned int k = 0; k < ten->shape[1]; ++k) {
+    float max_val = ten->values[k];
+    for(unsigned int j = 0; j < ten->shape[0]; ++j) {
+      if(ten->values[k + ten->shape[1]*j] > max_val) {
+        max_val = ten->values[k + ten->shape[1]*j];
+      }
+    }
+    
+    float sum_exp = 0.0f;
+    for(unsigned int l = 0; l < ten->shape[0]; ++l) {
+      sum_exp += expf(ten->values[k + ten->shape[1]*l] - max_val);
+    }
+
+    for(unsigned int i = 0; i < ten->shape[0]; ++i) {
+      res->values[k + i*res->shape[1]] = expf(ten->values[k + i*ten->shape[1]] - max_val) / sum_exp;
+    }
+  }
+
+  return res;
+}
+
+
+tensor *cross_entropy_loss_ten(tensor *pred, tensor *y) {
+  if(pred->size != y->size) {
+    return NULL;
+  } else if(pred->ndim != y->ndim) {
+    return NULL;
+  }
+  
+
+  tensor *res = new_ten(NULL, (int[]){1}, 1);
+  if(res == NULL) return NULL;
+
+  res->values[0] = 0.0f;
+
+  for(unsigned int i = 0; i < pred->size; ++i) {
+    res->values[0] += -y->values[i] * logf(pred->values[i] + EPS_CE);
+  }
+
+  return res;
+}
+
 
 void add_inplace_ten(tensor *des, tensor *src) {
   if(des->ndim != src->ndim || des->size != src->size) return;
