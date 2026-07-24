@@ -6,6 +6,8 @@
 
 #include "./node.h"
 
+#include "../mnist/mnist.h"
+
 typedef enum { 
   ACT_NONE, 
   ACT_SIGMOID, 
@@ -44,6 +46,6 @@ node *cross_entropy(node *pred, node *y);
 void update(nn *nn, float lr);
 
 tensor *predict(nn *nn, tensor *x);
-void train(nn *nn, tensor **xs, tensor **ys, int n, int epochs, float lr, loss_t lt);
+void train(nn *nn, tensor **xs, tensor **ys, int n, int epochs, float lr, loss_t lt, mnist_set *tr);
 
 #endif // NN_H

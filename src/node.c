@@ -47,7 +47,7 @@ void clear_arena(arena_t *a) {
   }
 
   free(a->nodes);
-  
+
   return;
 }
 

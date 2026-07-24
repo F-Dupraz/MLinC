@@ -1,10 +1,11 @@
 #include "./nn.h"
-#include "node.h"
-#include "tensor.h"
+#include "./node.h"
+#include "./tensor.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
 void zero_grad(nn* nn) {
   for(int i = 0; i < nn->layers_s; ++i) {
@@ -31,8 +32,15 @@ layer *new_layer(int in_s, int out_s, act_type act_t) {
     return NULL;
   }
 
+  float limit;
+  if (act_t == ACT_RELU) {
+    limit = sqrtf(6.0f / in_s);            // He uniforme
+  } else {
+    limit = sqrtf(6.0f / (in_s + out_s));  // Xavier uniforme
+  }
+
   for(int i = 0; i < w_size; ++i) {
-    values[i] = (float)rand() / RAND_MAX * 2 - 1;
+    values[i] = limit * ((float)rand() / RAND_MAX * 2 - 1);
   }
 
   int shape[] = {out_s, in_s};
@@ -48,31 +56,16 @@ layer *new_layer(int in_s, int out_s, act_type act_t) {
 
   free(values);
 
-  const int b_size = out_s;
-  float *b_values = malloc(b_size * sizeof(float));
-  if(b_values == NULL) {
-    free(l);
-    free_node(weights);
-    return NULL;
-  }
-    
-  for(int j = 0; j < b_size; ++j) {
-    b_values[j] = (float)rand() / RAND_MAX * 2 - 1;
-  }
-
   int b_shape[] = {out_s, 1};
   
-  node *biases = new_node(b_values, b_shape, 2, NULL, 0, OP_LEAF);
+  node *biases = new_node(NULL, b_shape, 2, NULL, 0, OP_LEAF);
   if(biases == NULL) {
     free(l);
-    free(b_values);
     free_node(weights);
     return NULL;
   }
 
   l->biases = biases;
-
-  free(b_values);
 
   l->in_s = in_s;
   l->out_s = out_s;
@@ -241,7 +234,7 @@ tensor *predict(nn *nn, tensor *x) {
   return result;
 }
 
-void train(nn *nn, tensor **xs, tensor **ys, int n, int epochs, float lr, loss_t lt) {
+void train(nn *nn, tensor **xs, tensor **ys, int n, int epochs, float lr, loss_t lt, mnist_set *tr) {
   arena_t tape;
   init_arena(&tape);
   set_arena(&tape);
@@ -275,9 +268,12 @@ void train(nn *nn, tensor **xs, tensor **ys, int n, int epochs, float lr, loss_t
       free_node(n_ys);
     }
 
-    if(epoch % 100 == 0) {
-      printf("Loss promedio: %f\n", epoch_loss/n);
-    }
+    shuffle_mnist(tr); 
+   
+    printf("Epoch: %d, loss prom: %f\n", epoch, epoch_loss/n);
+
+    // if(epoch % 10 == 0) {
+    // }
   }
 
   clear_arena(&tape);
