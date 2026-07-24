@@ -99,4 +99,13 @@ dkms.conf
 .history
 .ionide
 
+./mnist/t10k-images-idx1-ubyte
+./mnist/t10k-labels-idx1-ubyte
+./mnist/train-images-idx1-ubyte
+./mnist/train-labels-idx1-ubyte
+
+./xor
+./mnist_t
+./test_g
+
 # End of https://www.toptal.com/developers/gitignore/api/c,c++,powershell,visualstudiocode
